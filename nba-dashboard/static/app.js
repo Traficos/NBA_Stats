@@ -1,3 +1,7 @@
+// === BASE PATH ===
+const BASE = document.querySelector('base')?.getAttribute('href')?.replace(/\/$/, '')
+  || window.location.pathname.replace(/\/$/, '');
+
 // === TEAM DATA ===
 const TEAM_NAMES = {
   ATL: "Hawks", BOS: "Celtics", BKN: "Nets", CHA: "Hornets",
@@ -173,8 +177,8 @@ async function loadData(dateStr) {
   showSpinner();
   try {
     const [gamesResp, standingsResp] = await Promise.all([
-      fetch(`/api/games?date=${dateStr}`),
-      fetch(`/api/standings?date=${dateStr}`),
+      fetch(`${BASE}/api/games?date=${dateStr}`),
+      fetch(`${BASE}/api/standings?date=${dateStr}`),
     ]);
 
     if (!gamesResp.ok || !standingsResp.ok) {
@@ -199,7 +203,7 @@ async function handleRefresh() {
   refreshBtn.textContent = "...";
   hideError();
   try {
-    const resp = await fetch("/api/refresh", { method: "POST" });
+    const resp = await fetch(`${BASE}/api/refresh`, { method: "POST" });
     if (!resp.ok) throw new Error("Echec du rafraichissement");
     await loadData(datePicker.value);
   } catch (err) {
@@ -270,7 +274,7 @@ async function loadVideos() {
   if (videosLoaded) return;
   showSpinner();
   try {
-    const resp = await fetch("/api/videos");
+    const resp = await fetch(`${BASE}/api/videos`);
     if (!resp.ok) throw new Error("Erreur chargement videos");
     const data = await resp.json();
     renderVideos(data);
@@ -388,7 +392,7 @@ async function loadFfbb() {
   if (ffbbLoaded) return;
   showSpinner();
   try {
-    const resp = await fetch("/api/ffbb");
+    const resp = await fetch(`${BASE}/api/ffbb`);
     if (!resp.ok) throw new Error("Erreur chargement FFBB");
     const data = await resp.json();
     renderFfbb(data);
