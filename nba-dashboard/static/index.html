@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBA Dashboard</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏀</text></svg>">
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+    <div class="header">
+        <div class="header-left">
+            <span class="header-icon">🏀</span>
+            <span class="header-title">NBA Dashboard</span>
+        </div>
+        <div class="header-controls">
+            <input type="date" id="date-picker">
+            <button id="refresh-btn">Rafraichir</button>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" data-tab="games">Matchs</div>
+        <div class="tab" data-tab="east">Classement Est</div>
+        <div class="tab" data-tab="west">Classement Ouest</div>
+        <div class="tab" data-tab="videos">Videos</div>
+        <div class="tab" data-tab="ffbb">Mon Equipe</div>
+    </div>
+
+    <div class="content">
+        <section id="games-section" class="tab-content active">
+            <div class="section-title">Matchs du <span id="games-date"></span></div>
+            <div id="games-list"></div>
+            <p id="no-games" class="empty-message" hidden>Pas de matchs pour cette date</p>
+        </section>
+
+        <section id="east-section" class="tab-content">
+            <div class="section-title">Classement — Conference Est</div>
+            <div id="east-standings"></div>
+        </section>
+
+        <section id="west-section" class="tab-content">
+            <div class="section-title">Classement — Conference Ouest</div>
+            <div id="west-standings"></div>
+        </section>
+
+        <section id="videos-section" class="tab-content">
+            <div class="section-title">Prime Video Sport FR</div>
+            <div id="videos-list"></div>
+            <p id="no-videos" class="empty-message" hidden>Aucune video disponible</p>
+        </section>
+
+        <section id="ffbb-section" class="tab-content">
+            <div id="ffbb-content"></div>
+        </section>
+
+        <div id="spinner" class="spinner" hidden>
+            <div class="spinner-circle"></div>
+        </div>
+
+        <div id="error-message" class="error-message" hidden></div>
+    </div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
