@@ -101,6 +101,9 @@ def fetch_latest_videos(max_results: int = 6) -> list[dict]:
                     "url": f"https://www.youtube.com/watch?v={video_id.text}",
                 })
 
+        # Ne garder que les résumés de matchs NBA
+        videos = [v for v in videos if "sum" in v["title"].lower() and "match" in v["title"].lower()]
+
         _cache["videos"] = videos
         _cache["fetched_at"] = now
         return videos[:max_results]
