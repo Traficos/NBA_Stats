@@ -41,3 +41,40 @@ def _format_published(pub_date: str) -> str:
         return dt.isoformat()
     except (TypeError, ValueError):
         return ""
+
+
+def fetch_latest_tiktoks(max_results: int = 6) -> list[dict]:
+    """Recupere les derniers Reels TikTok via RSSHub. Cache memoire 1h."""
+    now = time.time()
+    if _cache["videos"] and (now - _cache["fetched_at"]) < CACHE_TTL:
+        return _cache["videos"][:max_results]
+
+    resp = requests.get(RSS_URL, headers=HEADERS, timeout=10)
+    if resp.status_code != 200:
+        logger.warning("RSSHub TikTok status %s", resp.status_code)
+        return []
+
+    root = ET.fromstring(resp.text)
+    videos = []
+    for item in root.findall("./channel/item"):
+        link_el = item.find("link")
+        title_el = item.find("title")
+        pub_el = item.find("pubDate")
+        desc_el = item.find("description")
+
+        link = link_el.text if link_el is not None and link_el.text else ""
+        video_id = _extract_video_id(link)
+        if not video_id:
+            continue
+
+        videos.append({
+            "video_id": video_id,
+            "caption": title_el.text if title_el is not None and title_el.text else "",
+            "published": _format_published(pub_el.text) if pub_el is not None and pub_el.text else "",
+            "thumbnail": _extract_thumbnail(desc_el.text) if desc_el is not None and desc_el.text else "",
+            "url": link,
+        })
+
+    _cache["videos"] = videos
+    _cache["fetched_at"] = now
+    return videos[:max_results]
