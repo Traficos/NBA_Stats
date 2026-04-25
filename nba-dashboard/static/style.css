@@ -543,6 +543,8 @@ body {
 
 .ffbb-team-picker select {
     flex: 1;
+    min-width: 0;
+    max-width: 100%;
     background: #0f1a3a;
     color: #ccc;
     border: 1px solid #2a4a8e;
