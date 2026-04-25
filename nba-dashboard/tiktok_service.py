@@ -1,88 +1,92 @@
-"""Service pour recuperer les derniers Reels TikTok via RSSHub."""
+"""Service pour recuperer les derniers Reels TikTok via RapidAPI."""
 
+import json
 import logging
 import os
-import re
 import time
-import xml.etree.ElementTree as ET
-from email.utils import parsedate_to_datetime
+from datetime import datetime, timezone
 
 import requests
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_RSS_URL = "http://localhost:1200/tiktok/user/@beyond_the_hoop"
-RSS_URL = os.getenv("TIKTOK_RSS_URL", DEFAULT_RSS_URL)
+DEFAULT_HOST = "tiktok-scraper7.p.rapidapi.com"
+DEFAULT_USERNAME = "beyond_the_hoop"
 
-HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; nba-dashboard/1.0)"}
+RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY", "")
+RAPIDAPI_HOST = os.getenv("RAPIDAPI_HOST", DEFAULT_HOST)
+TIKTOK_USERNAME = os.getenv("TIKTOK_USERNAME", DEFAULT_USERNAME)
 
-CACHE_TTL = 3600
+CACHE_TTL = 3600  # 1 heure
 _cache = {"videos": [], "fetched_at": 0}
 
 
-def _extract_video_id(link: str) -> str:
-    """Extrait l'ID numerique d'un lien TikTok (segment apres /video/)."""
-    match = re.search(r"/video/(\d+)", link or "")
-    return match.group(1) if match else ""
-
-
-def _extract_thumbnail(description: str) -> str:
-    """Extrait l'URL d'une <img> embedee dans la description HTML du flux."""
-    match = re.search(r'<img\s+[^>]*src="([^"]+)"', description or "")
-    return match.group(1) if match else ""
-
-
-def _format_published(pub_date: str) -> str:
-    """Convertit une date RFC 822 (format flux RSS) en ISO 8601."""
-    if not pub_date:
+def _format_published(create_time) -> str:
+    """Convertit un timestamp Unix (secondes) en ISO 8601 UTC."""
+    if not create_time:
         return ""
     try:
-        dt = parsedate_to_datetime(pub_date)
-        return dt.isoformat()
-    except (TypeError, ValueError):
+        return datetime.fromtimestamp(int(create_time), tz=timezone.utc).isoformat()
+    except (TypeError, ValueError, OSError):
         return ""
+
+
+def _build_video_url(video_id: str, username: str) -> str:
+    """Construit l'URL publique TikTok d'une video."""
+    if not video_id:
+        return ""
+    return f"https://www.tiktok.com/@{username}/video/{video_id}"
 
 
 def fetch_latest_tiktoks(max_results: int = 6) -> list[dict]:
-    """Recupere les derniers Reels TikTok via RSSHub. Cache memoire 1h."""
+    """Recupere les derniers Reels TikTok via RapidAPI. Cache memoire 1h."""
     now = time.time()
     if _cache["videos"] and (now - _cache["fetched_at"]) < CACHE_TTL:
         return _cache["videos"][:max_results]
 
+    if not RAPIDAPI_KEY:
+        logger.warning("RAPIDAPI_KEY non definie — onglet TikTok desactive")
+        return []
+
+    url = f"https://{RAPIDAPI_HOST}/user/posts"
+    headers = {
+        "X-RapidAPI-Key": RAPIDAPI_KEY,
+        "X-RapidAPI-Host": RAPIDAPI_HOST,
+    }
+    params = {"unique_id": TIKTOK_USERNAME, "count": str(max_results)}
+
     try:
-        resp = requests.get(RSS_URL, headers=HEADERS, timeout=10)
+        resp = requests.get(url, headers=headers, params=params, timeout=15)
     except requests.RequestException as e:
-        logger.warning("Erreur reseau RSSHub TikTok: %s", e)
+        logger.warning("Erreur reseau RapidAPI TikTok: %s", e)
         return []
 
     if resp.status_code != 200:
-        logger.warning("RSSHub TikTok status %s", resp.status_code)
+        logger.warning("RapidAPI TikTok status %s", resp.status_code)
         return []
 
     try:
-        root = ET.fromstring(resp.text)
-    except ET.ParseError as e:
-        logger.warning("XML invalide RSSHub TikTok: %s", e)
+        payload = resp.json()
+    except (json.JSONDecodeError, ValueError) as e:
+        logger.warning("JSON invalide RapidAPI TikTok: %s", e)
+        return []
+
+    if payload.get("code") != 0:
+        logger.warning("RapidAPI TikTok code applicatif %s: %s",
+                       payload.get("code"), payload.get("msg"))
         return []
 
     videos = []
-    for item in root.findall("./channel/item"):
-        link_el = item.find("link")
-        title_el = item.find("title")
-        pub_el = item.find("pubDate")
-        desc_el = item.find("description")
-
-        link = link_el.text if link_el is not None and link_el.text else ""
-        video_id = _extract_video_id(link)
+    for item in payload.get("data", {}).get("videos", []):
+        video_id = str(item.get("video_id") or "")
         if not video_id:
             continue
-
         videos.append({
             "video_id": video_id,
-            "caption": title_el.text if title_el is not None and title_el.text else "",
-            "published": _format_published(pub_el.text) if pub_el is not None and pub_el.text else "",
-            "thumbnail": _extract_thumbnail(desc_el.text) if desc_el is not None and desc_el.text else "",
-            "url": link,
+            "caption": item.get("title") or "",
+            "published": _format_published(item.get("create_time")),
+            "thumbnail": item.get("cover") or "",
+            "url": _build_video_url(video_id, TIKTOK_USERNAME),
         })
 
     _cache["videos"] = videos
