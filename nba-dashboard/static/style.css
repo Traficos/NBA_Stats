@@ -74,7 +74,7 @@ body {
     cursor: wait;
 }
 
-/* === TABS === */
+/* === TABS (desktop : barre du haut) === */
 .tabs {
     background: #0a1535;
     display: flex;
@@ -108,6 +108,12 @@ body {
     color: #fff;
     font-weight: 600;
     border-bottom-color: #C9082A;
+}
+
+/* Desktop : icone et label court caches, label long visible */
+.tab-icon,
+.tab-label-short {
+    display: none;
 }
 
 /* === CONTENT === */
@@ -716,8 +722,68 @@ body {
     .team-info { width: 80px; }
     .team-logo { width: 38px; height: 38px; }
     .score-value { font-size: 1.5rem; }
-    .tab { padding: 8px 14px; font-size: 0.75rem; }
     .standings-row { padding: 6px 10px; }
     .s-name { font-size: 0.75rem; }
     .s-record { font-size: 0.7rem; }
+
+    /* Bottom navigation en mobile */
+    body { padding-bottom: 64px; }
+
+    .tabs {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        border-top: 2px solid #C9082A;
+        border-bottom: none;
+        overflow-x: visible;
+        padding: 4px 0;
+        box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    .tab {
+        flex: 1;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        padding: 4px 2px;
+        margin-bottom: 0;
+        border-bottom: none;
+        font-size: 0.62rem;
+        white-space: normal;
+        text-align: center;
+        display: flex;
+        min-width: 0;
+    }
+
+    .tab.active {
+        border-bottom: none;
+        color: #C9082A;
+    }
+
+    .tab-icon {
+        display: block;
+        font-size: 1.25rem;
+        line-height: 1;
+        filter: grayscale(0.6);
+        opacity: 0.7;
+    }
+
+    .tab.active .tab-icon {
+        filter: none;
+        opacity: 1;
+    }
+
+    .tab-label-full {
+        display: none;
+    }
+
+    .tab-label-short {
+        display: block;
+    }
+
+    .content {
+        padding-bottom: 16px;
+    }
 }
