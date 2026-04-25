@@ -79,6 +79,12 @@ body {
     background: #0a1535;
     display: flex;
     border-bottom: 2px solid #C9082A;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+    display: none;
 }
 
 .tab {
@@ -90,6 +96,8 @@ body {
     margin-bottom: -2px;
     transition: all 0.2s;
     user-select: none;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .tab:hover {
