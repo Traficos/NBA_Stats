@@ -49,12 +49,22 @@ def fetch_latest_tiktoks(max_results: int = 6) -> list[dict]:
     if _cache["videos"] and (now - _cache["fetched_at"]) < CACHE_TTL:
         return _cache["videos"][:max_results]
 
-    resp = requests.get(RSS_URL, headers=HEADERS, timeout=10)
+    try:
+        resp = requests.get(RSS_URL, headers=HEADERS, timeout=10)
+    except requests.RequestException as e:
+        logger.warning("Erreur reseau RSSHub TikTok: %s", e)
+        return []
+
     if resp.status_code != 200:
         logger.warning("RSSHub TikTok status %s", resp.status_code)
         return []
 
-    root = ET.fromstring(resp.text)
+    try:
+        root = ET.fromstring(resp.text)
+    except ET.ParseError as e:
+        logger.warning("XML invalide RSSHub TikTok: %s", e)
+        return []
+
     videos = []
     for item in root.findall("./channel/item"):
         link_el = item.find("link")

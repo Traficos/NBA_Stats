@@ -1,4 +1,5 @@
 import pytest
+import requests
 
 import tiktok_service
 from tiktok_service import _extract_video_id, _extract_thumbnail, _format_published
@@ -123,3 +124,18 @@ class TestFetchLatestTiktoks:
         fetch_latest_tiktoks()
 
         assert mock_get.call_count == 2
+
+    @patch("tiktok_service.requests.get")
+    def test_status_non_200_renvoie_liste_vide(self, mock_get):
+        mock_get.return_value = _mock_response(status=404, text="not found")
+        assert fetch_latest_tiktoks() == []
+
+    @patch("tiktok_service.requests.get")
+    def test_request_exception_renvoie_liste_vide(self, mock_get):
+        mock_get.side_effect = requests.RequestException("connection refused")
+        assert fetch_latest_tiktoks() == []
+
+    @patch("tiktok_service.requests.get")
+    def test_xml_invalide_renvoie_liste_vide(self, mock_get):
+        mock_get.return_value = _mock_response(text="<not valid xml")
+        assert fetch_latest_tiktoks() == []
