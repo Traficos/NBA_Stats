@@ -441,8 +441,12 @@ body {
 /* === TIKTOK === */
 .tiktok-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 16px;
+}
+
+@media (max-width: 380px) {
+    .tiktok-list { grid-template-columns: 1fr; }
 }
 
 .tiktok-card {
