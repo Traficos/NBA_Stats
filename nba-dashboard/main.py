@@ -6,7 +6,7 @@ from fastapi import FastAPI, Depends, Query
 from fastapi.staticfiles import StaticFiles
 
 from database import get_connection, init_db, get_games_by_date, get_standings_by_date, get_latest_standings_date
-from ffbb_service import fetch_ffbb_data
+from ffbb_service import fetch_ffbb_data, fetch_ffbb_teams, fetch_ffbb_team_data
 from scheduler import create_scheduler, daily_collect
 from tiktok_service import fetch_latest_tiktoks
 from youtube_service import fetch_latest_videos
@@ -109,6 +109,16 @@ def api_refresh():
 @app.get("/api/ffbb")
 def api_ffbb():
     return fetch_ffbb_data()
+
+
+@app.get("/api/ffbb/teams")
+def api_ffbb_teams():
+    return {"teams": fetch_ffbb_teams()}
+
+
+@app.get("/api/ffbb/team/{team_id}")
+def api_ffbb_team(team_id: str):
+    return fetch_ffbb_team_data(team_id)
 
 
 @app.get("/api/videos")

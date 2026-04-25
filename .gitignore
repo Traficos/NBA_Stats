@@ -10,3 +10,4 @@ nba.db
 .claude/
 .superpowers/
 docs/superpowers/
+.env.local

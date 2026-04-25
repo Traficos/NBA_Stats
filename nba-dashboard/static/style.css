@@ -517,6 +517,41 @@ body {
 }
 
 /* === FFBB === */
+.ffbb-team-picker {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #1a1a2e;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin-bottom: 14px;
+}
+
+.ffbb-team-picker label {
+    color: #888;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+
+.ffbb-team-picker select {
+    flex: 1;
+    background: #0f1a3a;
+    color: #ccc;
+    border: 1px solid #2a4a8e;
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.ffbb-team-picker select:focus {
+    outline: none;
+    border-color: #C9082A;
+}
+
+
 .ffbb-header {
     background: linear-gradient(135deg, #17408B, #0a1535);
     border-radius: 12px;

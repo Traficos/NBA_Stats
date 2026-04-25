@@ -355,9 +355,11 @@ async function loadTikToks() {
   }
 }
 
-// === FFBB ===
+// === FFBB / USBC ===
 const ffbbContentEl = document.getElementById("ffbb-content");
-let ffbbLoaded = false;
+const ffbbTeamSelectEl = document.getElementById("ffbb-team-select");
+let ffbbTeamsLoaded = false;
+const ffbbTeamCache = {};  // team_id -> data
 
 function formatDate(dateStr) {
   const d = new Date(dateStr + "T00:00:00");
@@ -365,42 +367,49 @@ function formatDate(dateStr) {
 }
 
 function renderFfbb(data) {
+  const teamLabel = data.label || "Équipe";
+  const subline = [data.competition, data.categorie].filter(Boolean).join(" — ");
+
   let html = `
     <div class="ffbb-header">
-      <div class="ffbb-team-name">🏀 ${data.team}</div>
-      <div class="ffbb-category">${data.category}</div>
+      <div class="ffbb-team-name">🏀 ${teamLabel}</div>
+      <div class="ffbb-category">${subline}</div>
     </div>
   `;
 
-  // Classement
-  html += `<div class="section-title">Classement</div>`;
-  for (const s of data.standings) {
-    const diffNum = parseInt(s.diff);
-    const diffClass = diffNum > 0 ? "positive" : diffNum < 0 ? "negative" : "";
-    const diffPrefix = diffNum > 0 ? "+" : "";
-    html += `
-      <div class="ffbb-standings-row ${s.is_my_team ? "my-team" : ""}">
-        <span class="ffbb-s-rank">${s.rank}</span>
-        <span class="ffbb-s-team">${s.team}</span>
-        <span class="ffbb-s-pts">${s.pts} pts</span>
-        <span class="ffbb-s-record">${s.wins}V ${s.losses}D</span>
-        <span class="ffbb-s-diff ${diffClass}">${diffPrefix}${s.diff}</span>
-      </div>
-    `;
+  if (data.standings && data.standings.length > 0) {
+    html += `<div class="section-title">Classement</div>`;
+    for (const s of data.standings) {
+      const diffNum = parseInt(s.diff);
+      const diffClass = diffNum > 0 ? "positive" : diffNum < 0 ? "negative" : "";
+      const diffPrefix = diffNum > 0 ? "+" : "";
+      html += `
+        <div class="ffbb-standings-row ${s.is_my_team ? "my-team" : ""}">
+          <span class="ffbb-s-rank">${s.rank}</span>
+          <span class="ffbb-s-team">${s.team}</span>
+          <span class="ffbb-s-pts">${s.pts} pts</span>
+          <span class="ffbb-s-record">${s.wins}V ${s.losses}D</span>
+          <span class="ffbb-s-diff ${diffClass}">${diffPrefix}${s.diff}</span>
+        </div>
+      `;
+    }
   }
 
-  // Prochain match
-  const nextMatch = data.calendar.find(m => !m.played);
+  const calendar = data.calendar || [];
+  const myMatches = calendar.filter(m => m.is_home || (m.home_team && m.home_team.toUpperCase().includes("UNION DU SILLON")) || (m.away_team && m.away_team.toUpperCase().includes("UNION DU SILLON")));
+
+  const nextMatch = myMatches.find(m => !m.played);
   if (nextMatch) {
     const isHome = nextMatch.is_home;
     const opponent = isHome ? nextMatch.away_team : nextMatch.home_team;
+    const myName = isHome ? nextMatch.home_team : nextMatch.away_team;
     html += `
       <div class="section-title" style="margin-top:20px;">Prochain match</div>
       <div class="ffbb-match upcoming">
         <span class="ffbb-match-journee">J${nextMatch.journee}</span>
         <span class="ffbb-match-date">${formatDate(nextMatch.date)}</span>
         <div class="ffbb-match-teams">
-          <span class="my-team-name">Union Du Sillon</span>
+          <span class="my-team-name">${myName}</span>
           <span style="color:#666;"> vs </span>
           <span style="color:#ccc;">${opponent}</span>
         </div>
@@ -409,8 +418,7 @@ function renderFfbb(data) {
     `;
   }
 
-  // Resultats
-  const played = data.calendar.filter(m => m.played).reverse();
+  const played = myMatches.filter(m => m.played).reverse();
   if (played.length > 0) {
     html += `<div class="section-title" style="margin-top:20px;">Resultats</div>`;
     for (const m of played) {
@@ -434,8 +442,7 @@ function renderFfbb(data) {
     }
   }
 
-  // Matchs a venir
-  const upcoming = data.calendar.filter(m => !m.played);
+  const upcoming = myMatches.filter(m => !m.played);
   if (upcoming.length > 1) {
     html += `<div class="section-title" style="margin-top:20px;">A venir</div>`;
     for (const m of upcoming) {
@@ -454,24 +461,82 @@ function renderFfbb(data) {
     }
   }
 
+  if (!data.standings?.length && !calendar.length) {
+    html += `<p class="empty-message">Pas de donnees disponibles pour cette equipe</p>`;
+  }
+
   ffbbContentEl.innerHTML = html;
 }
 
-async function loadFfbb() {
-  if (ffbbLoaded) return;
+async function loadFfbbTeam(teamId) {
+  if (!teamId) return;
+  if (ffbbTeamCache[teamId]) {
+    renderFfbb(ffbbTeamCache[teamId]);
+    return;
+  }
   showSpinner();
+  ffbbContentEl.innerHTML = "";
   try {
-    const resp = await fetch(`${BASE}/api/ffbb`);
-    if (!resp.ok) throw new Error("Erreur chargement FFBB");
+    const resp = await fetch(`${BASE}/api/ffbb/team/${teamId}`);
+    if (!resp.ok) throw new Error("Erreur chargement equipe");
     const data = await resp.json();
+    ffbbTeamCache[teamId] = data;
     renderFfbb(data);
-    ffbbLoaded = true;
   } catch (err) {
-    ffbbContentEl.innerHTML = `<p class="empty-message">Impossible de charger les donnees FFBB</p>`;
+    ffbbContentEl.innerHTML = `<p class="empty-message">Impossible de charger les donnees de l'equipe</p>`;
   } finally {
     hideSpinner();
   }
 }
+
+function populateTeamSelect(teams) {
+  // Grouper par categorie
+  const byCategorie = {};
+  for (const t of teams) {
+    (byCategorie[t.categorie] || (byCategorie[t.categorie] = [])).push(t);
+  }
+  const order = ["SE", "U18", "U15", "U13", "U11", "U9"];
+  const sortedKeys = [...new Set([...order.filter(k => byCategorie[k]), ...Object.keys(byCategorie)])];
+
+  ffbbTeamSelectEl.innerHTML = "";
+  for (const cat of sortedKeys) {
+    const group = document.createElement("optgroup");
+    group.label = cat;
+    for (const t of byCategorie[cat]) {
+      const opt = document.createElement("option");
+      opt.value = t.team_id;
+      const numero = t.numero ? ` ${t.numero}` : "";
+      opt.textContent = `${t.competition}${numero} — ${t.label}`;
+      group.appendChild(opt);
+    }
+    ffbbTeamSelectEl.appendChild(group);
+  }
+}
+
+async function loadFfbb() {
+  if (ffbbTeamsLoaded) return;
+  showSpinner();
+  try {
+    const resp = await fetch(`${BASE}/api/ffbb/teams`);
+    if (!resp.ok) throw new Error("Erreur chargement liste equipes");
+    const data = await resp.json();
+    const teams = data.teams || [];
+    if (teams.length === 0) {
+      ffbbContentEl.innerHTML = `<p class="empty-message">Aucune equipe disponible</p>`;
+      return;
+    }
+    populateTeamSelect(teams);
+    ffbbTeamsLoaded = true;
+    // Charger la premiere equipe par defaut
+    await loadFfbbTeam(ffbbTeamSelectEl.value);
+  } catch (err) {
+    ffbbContentEl.innerHTML = `<p class="empty-message">Impossible de charger la liste des equipes</p>`;
+  } finally {
+    hideSpinner();
+  }
+}
+
+ffbbTeamSelectEl.addEventListener("change", () => loadFfbbTeam(ffbbTeamSelectEl.value));
 
 // === INIT ===
 datePicker.value = yesterday();
