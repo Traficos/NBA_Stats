@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 import time
@@ -19,13 +20,15 @@ _team_cache: dict[str, dict] = {}  # team_id -> {data, fetched_at}
 
 
 def _decode_next_chunks(html: str) -> str:
-    """Concatene et decode les chunks Next.js d'une page."""
+    """Concatene et decode les chunks Next.js d'une page (preserve UTF-8)."""
     chunks = re.findall(r'self\.__next_f\.push\(\[1,"(.*?)"\]\)', html, re.DOTALL)
     decoded = ""
     for chunk in chunks:
         try:
-            decoded += chunk.encode("utf-8").decode("unicode_escape")
-        except Exception:
+            # json.loads interprete les sequences d'echappement (\uXXXX, \", \\, etc.)
+            # sans corrompre les caracteres UTF-8 deja decodes par requests.
+            decoded += json.loads(f'"{chunk}"')
+        except (json.JSONDecodeError, ValueError):
             decoded += chunk
     return decoded
 
@@ -136,8 +139,8 @@ def _scrape_calendar(team_id: str) -> list[dict]:
             continue
 
         try:
-            decoded = chunk.encode("utf-8").decode("unicode_escape")
-        except Exception:
+            decoded = json.loads(f'"{chunk}"')
+        except (json.JSONDecodeError, ValueError):
             decoded = chunk
 
         match_pattern = re.compile(
