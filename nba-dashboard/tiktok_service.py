@@ -53,7 +53,9 @@ def fetch_latest_tiktoks(max_results: int = 6) -> list[dict]:
         "X-RapidAPI-Key": RAPIDAPI_KEY,
         "X-RapidAPI-Host": RAPIDAPI_HOST,
     }
-    params = {"unique_id": TIKTOK_USERNAME, "count": str(max_results)}
+    # On demande plus que max_results pour absorber les videos epinglees
+    # (typiquement 1 a 3 par profil) qui seront filtrees ensuite.
+    params = {"unique_id": TIKTOK_USERNAME, "count": str(max_results + 6)}
 
     try:
         resp = requests.get(url, headers=headers, params=params, timeout=15)
@@ -78,6 +80,9 @@ def fetch_latest_tiktoks(max_results: int = 6) -> list[dict]:
 
     videos = []
     for item in payload.get("data", {}).get("videos", []):
+        # Skip les videos epinglees pour ne garder que les vraies dernieres
+        if item.get("is_top"):
+            continue
         video_id = str(item.get("video_id") or "")
         if not video_id:
             continue

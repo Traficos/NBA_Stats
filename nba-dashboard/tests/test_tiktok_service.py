@@ -163,6 +163,30 @@ class TestFetchLatestTiktoks:
         assert fetch_latest_tiktoks() == []
 
     @patch("tiktok_service.requests.get")
+    def test_videos_epinglees_sont_filtrees(self, mock_get):
+        payload = {
+            "code": 0,
+            "data": {
+                "videos": [
+                    {"video_id": "1", "title": "epinglee 1", "create_time": 1, "cover": "x", "is_top": 1},
+                    {"video_id": "2", "title": "recente 1", "create_time": 1777000000, "cover": "y"},
+                    {"video_id": "3", "title": "epinglee 2", "create_time": 2, "cover": "z", "is_top": 1},
+                    {"video_id": "4", "title": "recente 2", "create_time": 1776000000, "cover": "w"},
+                ]
+            }
+        }
+        mock_get.return_value = _mock_response(payload=payload)
+        videos = fetch_latest_tiktoks()
+        assert len(videos) == 2
+        assert {v["video_id"] for v in videos} == {"2", "4"}
+
+    @patch("tiktok_service.requests.get")
+    def test_demande_plus_que_max_results_a_lapi(self, mock_get):
+        mock_get.return_value = _mock_response()
+        fetch_latest_tiktoks(max_results=6)
+        assert mock_get.call_args.kwargs["params"]["count"] == "12"
+
+    @patch("tiktok_service.requests.get")
     def test_video_sans_id_est_skippee(self, mock_get):
         payload = {
             "code": 0,
