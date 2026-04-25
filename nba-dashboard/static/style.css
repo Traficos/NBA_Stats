@@ -487,6 +487,19 @@ body {
     border: 0;
 }
 
+/* Masque la colonne droite (boutons coeur/commentaire/partage) en mode lecture */
+.tiktok-thumbnail[data-active="true"]::after {
+    content: "";
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 14%;
+    background: #000;
+    z-index: 2;
+    pointer-events: auto;
+}
+
 .tiktok-thumbnail .video-play-btn {
     background: rgba(254, 44, 85, 0.9);
 }
