@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from database import get_connection, init_db, get_games_by_date, get_standings_by_date, get_latest_standings_date
 from ffbb_service import fetch_ffbb_data
 from scheduler import create_scheduler, daily_collect
+from tiktok_service import fetch_latest_tiktoks
 from youtube_service import fetch_latest_videos
 
 logging.basicConfig(level=logging.INFO)
@@ -113,6 +114,12 @@ def api_ffbb():
 @app.get("/api/videos")
 def api_videos():
     videos = fetch_latest_videos()
+    return {"videos": videos}
+
+
+@app.get("/api/tiktok")
+def api_tiktok():
+    videos = fetch_latest_tiktoks()
     return {"videos": videos}
 
 

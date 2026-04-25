@@ -87,3 +87,32 @@ class TestRefreshRoute:
         assert resp.status_code == 200
         assert resp.json()["status"] == "ok"
         mock_collect.assert_called_once()
+
+
+class TestTikTokRoute:
+    @patch("main.fetch_latest_tiktoks")
+    def test_get_tiktok_renvoie_liste(self, mock_fetch, client):
+        mock_fetch.return_value = [
+            {
+                "video_id": "7395123456789012345",
+                "caption": "Test caption",
+                "published": "2026-04-23T18:42:11+00:00",
+                "thumbnail": "https://p16-sign.tiktokcdn.com/img.jpg",
+                "url": "https://www.tiktok.com/@beyond_the_hoop/video/7395123456789012345",
+            }
+        ]
+
+        resp = client.get("/api/tiktok")
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "videos" in data
+        assert len(data["videos"]) == 1
+        assert data["videos"][0]["video_id"] == "7395123456789012345"
+
+    @patch("main.fetch_latest_tiktoks")
+    def test_get_tiktok_liste_vide(self, mock_fetch, client):
+        mock_fetch.return_value = []
+        resp = client.get("/api/tiktok")
+        assert resp.status_code == 200
+        assert resp.json() == {"videos": []}
