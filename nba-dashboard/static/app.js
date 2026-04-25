@@ -331,7 +331,7 @@ function renderTikToks(data) {
         }
       }
       thumb.dataset.active = "true";
-      thumb.innerHTML = `<iframe src="https://www.tiktok.com/embed/v2/${v.video_id}" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+      thumb.innerHTML = `<iframe src="https://www.tiktok.com/player/v1/${v.video_id}?rel=0&music_info=0&description=0" allow="autoplay; encrypted-media" allowfullscreen sandbox="allow-scripts allow-same-origin allow-presentation"></iframe>`;
       activeTiktokId = v.video_id;
     });
 
