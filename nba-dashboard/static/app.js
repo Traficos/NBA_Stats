@@ -69,6 +69,7 @@ tabs.forEach(tab => {
     tab.classList.add("active");
     document.getElementById(tab.dataset.tab + "-section").classList.add("active");
     if (tab.dataset.tab === "videos") loadVideos();
+    if (tab.dataset.tab === "tiktok") loadTikToks();
     if (tab.dataset.tab === "ffbb") loadFfbb();
   });
 });
@@ -281,6 +282,74 @@ async function loadVideos() {
     videosLoaded = true;
   } catch (err) {
     videosListEl.innerHTML = `<p class="empty-message">Impossible de charger les videos</p>`;
+  } finally {
+    hideSpinner();
+  }
+}
+
+// === TIKTOK ===
+const tiktokListEl = document.getElementById("tiktok-list");
+const noTiktokEl = document.getElementById("no-tiktok");
+let tiktoksLoaded = false;
+let activeTiktokId = null;
+
+function renderTikToks(data) {
+  tiktokListEl.innerHTML = "";
+
+  if (data.videos.length === 0) {
+    noTiktokEl.hidden = false;
+    return;
+  }
+  noTiktokEl.hidden = true;
+
+  for (const v of data.videos) {
+    const card = document.createElement("div");
+    card.className = "tiktok-card";
+    card.innerHTML = `
+      <div class="tiktok-thumbnail" data-video-id="${v.video_id}" data-thumb="${v.thumbnail}">
+        <img src="${v.thumbnail}" alt="">
+        <div class="video-play-btn">&#9654;</div>
+      </div>
+      <div class="tiktok-info">
+        <div class="tiktok-caption">${v.caption}</div>
+        <div class="tiktok-date">${new Date(v.published).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}</div>
+      </div>
+    `;
+
+    const thumb = card.querySelector(".tiktok-thumbnail");
+    thumb.addEventListener("click", () => {
+      if (activeTiktokId === v.video_id) return;
+      // Restaure l'eventuelle miniature precedemment activee
+      if (activeTiktokId) {
+        const prev = tiktokListEl.querySelector('[data-active="true"]');
+        if (prev) {
+          prev.removeAttribute("data-active");
+          prev.innerHTML = `
+            <img src="${prev.dataset.thumb}" alt="">
+            <div class="video-play-btn">&#9654;</div>
+          `;
+        }
+      }
+      thumb.dataset.active = "true";
+      thumb.innerHTML = `<iframe src="https://www.tiktok.com/embed/v2/${v.video_id}" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+      activeTiktokId = v.video_id;
+    });
+
+    tiktokListEl.appendChild(card);
+  }
+}
+
+async function loadTikToks() {
+  if (tiktoksLoaded) return;
+  showSpinner();
+  try {
+    const resp = await fetch(`${BASE}/api/tiktok`);
+    if (!resp.ok) throw new Error("Erreur chargement tiktok");
+    const data = await resp.json();
+    renderTikToks(data);
+    tiktoksLoaded = true;
+  } catch (err) {
+    tiktokListEl.innerHTML = `<p class="empty-message">Impossible de charger les videos TikTok</p>`;
   } finally {
     hideSpinner();
   }
