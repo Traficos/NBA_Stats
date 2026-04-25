@@ -445,7 +445,7 @@ body {
     gap: 16px;
 }
 
-@media (max-width: 380px) {
+@media (max-width: 600px) {
     .tiktok-list { grid-template-columns: 1fr; }
 }
 
