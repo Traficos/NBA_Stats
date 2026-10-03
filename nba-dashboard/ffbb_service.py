@@ -12,6 +12,16 @@ CLUB_PATH = "/ligues/pdl/comites/0044/clubs/pdl0044217"
 FFBB_BASE = f"https://competitions.ffbb.com{CLUB_PATH}"
 DEFAULT_TEAM_ID = "200000005259984"
 FFBB_TIMEOUT = 15
+# Le site est protege par Bunny Shield : sans User-Agent navigateur, il renvoie
+# un challenge JS (403) au lieu de la page.
+FFBB_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/129.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml",
+    "Accept-Language": "fr-FR,fr;q=0.9",
+}
 
 CACHE_TTL_TEAMS = 86400      # 24h pour la liste des equipes
 CACHE_TTL_TEAM = 3600        # 1h pour les details d'une equipe
@@ -40,10 +50,11 @@ def fetch_ffbb_teams() -> list[dict]:
         return _teams_cache["teams"]
 
     try:
-        resp = requests.get(FFBB_BASE, timeout=FFBB_TIMEOUT)
+        resp = requests.get(FFBB_BASE, headers=FFBB_HEADERS, timeout=FFBB_TIMEOUT)
+        resp.raise_for_status()
         decoded = _decode_next_chunks(resp.text)
     except requests.RequestException:
-        logger.warning("Erreur reseau FFBB liste equipes")
+        logger.warning("Erreur reseau FFBB liste equipes", exc_info=True)
         return []
 
     pattern = re.compile(
@@ -73,7 +84,8 @@ def fetch_ffbb_teams() -> list[dict]:
 
 def _scrape_standings(team_id: str) -> list[dict]:
     url = f"{FFBB_BASE}/equipes/{team_id}/classement"
-    resp = requests.get(url, timeout=FFBB_TIMEOUT)
+    resp = requests.get(url, headers=FFBB_HEADERS, timeout=FFBB_TIMEOUT)
+    resp.raise_for_status()
     resp.encoding = "utf-8"
     soup = BeautifulSoup(resp.text, "html.parser")
 
@@ -129,7 +141,8 @@ def _scrape_standings(team_id: str) -> list[dict]:
 
 def _scrape_calendar(team_id: str) -> list[dict]:
     url = f"{FFBB_BASE}/equipes/{team_id}"
-    resp = requests.get(url, timeout=FFBB_TIMEOUT)
+    resp = requests.get(url, headers=FFBB_HEADERS, timeout=FFBB_TIMEOUT)
+    resp.raise_for_status()
 
     chunks = re.findall(r'self\.__next_f\.push\(\[1,"(.*?)"\]\)', resp.text, re.DOTALL)
 
