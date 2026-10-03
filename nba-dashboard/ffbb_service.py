@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 CLUB_PATH = "/ligues/pdl/comites/0044/clubs/pdl0044217"
 FFBB_BASE = f"https://competitions.ffbb.com{CLUB_PATH}"
-DEFAULT_TEAM_ID = "200000005259984"
+DEFAULT_TEAM_ID = "200000005367474"
 FFBB_TIMEOUT = 15
 # Le site est protege par Bunny Shield : sans User-Agent navigateur, il renvoie
 # un challenge JS (403) au lieu de la page.
