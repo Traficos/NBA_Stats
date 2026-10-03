@@ -359,6 +359,7 @@ async function loadTikToks() {
 const ffbbContentEl = document.getElementById("ffbb-content");
 const ffbbTeamSelectEl = document.getElementById("ffbb-team-select");
 let ffbbTeamsLoaded = false;
+const FFBB_TEAM_STORAGE_KEY = "ffbb-team-id";
 const ffbbTeamCache = {};  // team_id -> data
 
 function formatDate(dateStr) {
@@ -527,7 +528,14 @@ async function loadFfbb() {
     }
     populateTeamSelect(teams);
     ffbbTeamsLoaded = true;
-    // Charger la premiere equipe par defaut
+    // Restaurer l'equipe memorisee si elle existe encore, sinon la premiere
+    let savedTeamId = null;
+    try {
+      savedTeamId = localStorage.getItem(FFBB_TEAM_STORAGE_KEY);
+    } catch (e) {}
+    if (savedTeamId && teams.some(t => t.team_id === savedTeamId)) {
+      ffbbTeamSelectEl.value = savedTeamId;
+    }
     await loadFfbbTeam(ffbbTeamSelectEl.value);
   } catch (err) {
     ffbbContentEl.innerHTML = `<p class="empty-message">Impossible de charger la liste des equipes</p>`;
@@ -536,7 +544,12 @@ async function loadFfbb() {
   }
 }
 
-ffbbTeamSelectEl.addEventListener("change", () => loadFfbbTeam(ffbbTeamSelectEl.value));
+ffbbTeamSelectEl.addEventListener("change", () => {
+  try {
+    localStorage.setItem(FFBB_TEAM_STORAGE_KEY, ffbbTeamSelectEl.value);
+  } catch (e) {}
+  loadFfbbTeam(ffbbTeamSelectEl.value);
+});
 
 // === INIT ===
 datePicker.value = yesterday();
