@@ -99,14 +99,21 @@ class TestInsertAndQuery:
 
 class TestPurge:
     def test_purge_old_data(self, db):
-        old_game = {**SAMPLE_GAME, "game_id": "old001", "game_date": "2026-02-01"}
-        insert_games(db, [old_game, SAMPLE_GAME])
-        old_standing = {**SAMPLE_STANDING, "date": "2026-02-01"}
-        insert_standings(db, [old_standing, SAMPLE_STANDING])
+        # Dates relatives a aujourd'hui : la purge compare a date.today()
+        old_date = (date.today() - timedelta(days=60)).isoformat()
+        recent_date = (date.today() - timedelta(days=1)).isoformat()
+        old_game = {**SAMPLE_GAME, "game_id": "old001", "game_date": old_date}
+        recent_game = {**SAMPLE_GAME, "game_date": recent_date}
+        insert_games(db, [old_game, recent_game])
+        old_standing = {**SAMPLE_STANDING, "date": old_date}
+        recent_standing = {**SAMPLE_STANDING, "date": recent_date}
+        insert_standings(db, [old_standing, recent_standing])
         purge_old_data(db, days=30)
-        games = get_games_by_date(db, "2026-02-01")
+        games = get_games_by_date(db, old_date)
         assert games == []
-        recent = get_games_by_date(db, "2026-04-08")
+        recent = get_games_by_date(db, recent_date)
         assert len(recent) == 1
-        standings = get_standings_by_date(db, "2026-02-01")
+        standings = get_standings_by_date(db, old_date)
         assert standings["east"] == []
+        recent_standings = get_standings_by_date(db, recent_date)
+        assert len(recent_standings["east"]) + len(recent_standings["west"]) == 1
